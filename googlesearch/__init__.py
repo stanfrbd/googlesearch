@@ -1,18 +1,16 @@
 """googlesearch is a Python library for searching Google, easily."""
+
 from time import sleep
 from bs4 import BeautifulSoup
 from requests import get
-from urllib.parse import unquote # to decode the url
+from urllib.parse import unquote  # to decode the url
 from .user_agents import get_useragent
 
 
 def _req(term, results, lang, start, proxies, timeout, safe, ssl_verify, region):
     resp = get(
         url="https://www.google.com/search",
-        headers={
-            "User-Agent": get_useragent(),
-            "Accept": "*/*"
-        },
+        headers={"User-Agent": get_useragent(), "Accept": "*/*"},
         params={
             "q": term,
             "num": results + 2,  # Prevents multiple requests
@@ -24,10 +22,10 @@ def _req(term, results, lang, start, proxies, timeout, safe, ssl_verify, region)
         proxies=proxies,
         timeout=timeout,
         verify=ssl_verify,
-        cookies = {
-            'CONSENT': 'PENDING+987', # Bypasses the consent page
-            'SOCS': 'CAESHAgBEhIaAB',
-        }
+        cookies={
+            "CONSENT": "PENDING+987",  # Bypasses the consent page
+            "SOCS": "CAESHAgBEhIaAB",
+        },
     )
     resp.raise_for_status()
     return resp
@@ -43,25 +41,41 @@ class SearchResult:
         return f"SearchResult(url={self.url}, title={self.title}, description={self.description})"
 
 
-def search(term, num_results=10, lang="en", proxy=None, advanced=False, sleep_interval=0, timeout=5, safe="active", ssl_verify=None, region=None, start_num=0, unique=False):
+def search(
+    term,
+    num_results=10,
+    lang="en",
+    proxy=None,
+    advanced=False,
+    sleep_interval=0,
+    timeout=5,
+    safe="active",
+    ssl_verify=None,
+    region=None,
+    start_num=0,
+    unique=False,
+):
     """Search the Google search engine"""
 
     # Proxy setup
-    proxies = {"https": proxy, "http": proxy} if proxy and (proxy.startswith("https") or proxy.startswith("http") or proxy.startswith("socks5")) else None
+    proxies = (
+        {"https": proxy, "http": proxy}
+        if proxy and (proxy.startswith("https") or proxy.startswith("http") or proxy.startswith("socks5"))
+        else None
+    )
 
     start = start_num
     fetched_results = 0  # Keep track of the total fetched results
-    fetched_links = set() # to keep track of links that are already seen previously
+    fetched_links = set()  # to keep track of links that are already seen previously
 
     while fetched_results < num_results:
         # Send request
-        resp = _req(term, num_results - start,
-                    lang, start, proxies, timeout, safe, ssl_verify, region)
-        
+        resp = _req(term, num_results - start, lang, start, proxies, timeout, safe, ssl_verify, region)
+
         # put in file - comment for debugging purpose
-        # with open('google.html', 'w') as f:
+        # with open("google.html", "w") as f:
         #     f.write(resp.text)
-        
+
         # Parse
         soup = BeautifulSoup(resp.text, "html.parser")
         result_block = soup.find_all("div", class_="ezO2md")
@@ -104,8 +118,8 @@ def search(term, num_results=10, lang="en", proxy=None, advanced=False, sleep_in
                 break  # Stop if we have fetched the desired number of results
 
         if new_results == 0:
-            #If you want to have printed to your screen that the desired amount of queries can not been fulfilled, uncomment the line below:
-            #print(f"Only {fetched_results} results found for query requiring {num_results} results. Moving on to the next query.")
+            # If you want to have printed to your screen that the desired amount of queries can not been fulfilled, uncomment the line below:
+            # print(f"Only {fetched_results} results found for query requiring {num_results} results. Moving on to the next query.")
             break  # Break the loop if no new results were found in this iteration
 
         start += 10  # Prepare for the next set of results
